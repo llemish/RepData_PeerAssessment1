@@ -8,11 +8,11 @@ output:
 
 ## Loading and preprocessing the data
 
-For reading the file we need to process two steps:  
-1. Unzip the archive to CSV-file  
+For reading the file we need to complete two steps:  
+1. Unzip the archive to get CSV-file  
 2. Read the CSV-file
 
-Next R-code realize these steps. To control if result is correct, print result dimensions.
+Next R-code realizes aforementioned steps. To check if result is correct, print result dimensions.
 
 ```{r read file}
 unzip_file <- unzip("activity.zip")
@@ -24,16 +24,16 @@ dim(activity)
 
 For this part of the assignment, the missing values in the dataset are ignored.
 
-*activity$date* is a factor, so for counting total number of steps per day *tapply*
+*activity$date* is a factor, so to compute total number of steps per day *tapply*
 can be used. Result will be put to a *steps_total* variable.
 
 ```{r total number of steps}
 steps_total <- tapply(activity$steps, activity$date, sum)
-hist(steps_total, xlab = "Steps per day")
+hist(steps_total, xlab = "Steps per day", breaks = 10)
 ```
 
 Now when we have total numbers of steps per day for every date in the dataset, we
-can count mean and median numbers (using r functions) of steps per day.
+can count mean and median numbers of steps per day (using r functions).
 
 Mean total number of steps per day:
 ```{r mean numbers of steps}
@@ -49,8 +49,8 @@ steps_median
 
 ## What is the average daily activity pattern?
 
-In original dataset *activity\$interval* is a integer vector. In this case we will need to
-us *as.factor* function to use *split* to subset original dataset by intervals.
+In the original dataset *activity\$interval* is an integer vector. In this case we will need to
+use *as.factor* function and then proceed with *split* to subset the original dataset by intervals.
 
 ```{r split steps by interval}
 steps_by_interval <- split(activity, as.factor(activity$interval))
@@ -58,7 +58,7 @@ intervals <- names(steps_by_interval)
 head(intervals)
 ```
 
-Now we can count *mean* and *median* of steps in every subset by interval. NA will be ignored.
+Now we can calculate *mean* and *median* of steps in every subset by interval. NA will be ignored.
 ```{r total split steps by interval}
 steps_average_per_interval <- data.frame(interval = rep(0, length(intervals)),
                                          steps = rep(0, length(intervals)),
@@ -73,14 +73,17 @@ plot(steps_average_per_interval$interval, steps_average_per_interval$steps,
      type = 'l', xlab = "Intervals", ylab = "Average number of steps", col = "blue")
 ```
 
-On this point we have a data frame that in first column has all intervals and in second
-column has corresponding average number of steps, so we can find an interval that in average
-has the maxumum number of steps.
+At this point we have a data frame that in first column has all intervals and in second
+column has corresponding average numbers of steps, so we can find an interval that in average
+has the maximum number of steps.
 ```{r interval with maximum steps}
 max_index <- which.max(steps_average_per_interval$steps)
 max_interval <- steps_average_per_interval[max_index, 1]
 max_interval
 ```
+
+If I understand the logic of coding of intervals correctly, it means that in average the biggest number
+of steps person do at interval 8:35 -- 8:40
 
 ## Imputing missing values
 
@@ -112,13 +115,52 @@ steps <- new_activity$steps
 
 Now we can replace every *NA* with corresponding median for interval, that we calculated earlier.
 ```{r replace NA with median}
+new_steps <- 0
 for (i in 1:length(steps)) {
     if (is.na(steps[i])) {
         interval <- new_activity[[i, 3]]
         median_steps <- steps_average_per_interval[steps_average_per_interval$interval == interval, 3]
         steps[i] <- median_steps
+        new_steps <- new_steps + median_steps
     }
 }
 new_activity$steps <- steps
 ```
+Now we can calculate the total number of steps per day for new data frame like we did before for
+original one, and draw histogram for both results at one plot (old one -- blue color, new one -- red color).
+```{r total number of steps w/o NA}
+steps_total_new <- tapply(new_activity$steps, new_activity$date, sum)
+
+hist(steps_total, xlab = "Steps per day", col = rgb(0, 0, 1, 0.25), breaks = 10)
+hist(steps_total_new, col = rgb(1, 0, 0, 0.25), add = T, breaks = 10)
+```
+
+Calculate *mean* and *median* for new dataset.
+
+```{r mean numbers of steps for new dataset}
+steps_mean_new <- mean(steps_total_new)
+steps_mean_new
+
+steps_median_new <- median(steps_total_new)
+steps_median_new
+```
+
+As we can see, adding missing values to dataset slightly reduce average and median number of steps
+per day.
+
+Total step difference (just count all steps that I add in new dataset)
+``` {r total steps difference}
+new_steps
+```
+
 ## Are there differences in activity patterns between weekdays and weekends?
+
+For every raw in new dataset add factor variable weekday
+```{r add new factor}
+weekend <- c("суббота", "воскресенье")
+new_activity$weekend <- factor(rep("weekday", length(new_activity$date)), levels = c("weekday", "weekend"))
+for (i in 1:length(new_activity$date)){
+  new_activity[[i, 4]] <- ifelse(weekdays(as.Date(new_activity[[i, 2]])) %in% weekend, "weekend", "weekday")
+}
+
+```
