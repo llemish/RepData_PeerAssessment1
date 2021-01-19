@@ -8,15 +8,77 @@ output:
 
 ## Loading and preprocessing the data
 
+For reading the file we need to process two steps:  
+1. Unzip the archive to CSV-file  
+2. Read the CSV-file
 
+Next R-code realize these steps. To control if result is correct, print result dimensions.
+
+```{r read file}
+unzip_file <- unzip("activity.zip")
+activity <- read.csv(unzip_file)
+dim(activity)
+```
 
 ## What is mean total number of steps taken per day?
 
+For this part of the assignment, the missing values in the dataset are ignored.
 
+*activity$date* is a factor, so for counting total number of steps per day *tapply*
+can be used. Result will be put to a *steps_total* variable.
+
+```{r total number of steps}
+steps_total <- tapply(activity$steps, activity$date, sum)
+hist(steps_total, xlab = "Steps per day")
+```
+
+Now when we have total numbers of steps per day for every date in the dataset, we
+can count mean and median numbers (using r functions) of steps per day.
+
+Mean total number of steps per day:
+```{r mean numbers of steps}
+steps_mean <- mean(steps_total, na.rm = T)
+steps_mean
+```
+
+Median total number of steps per day:
+```{r median numbers of steps}
+steps_median <- median(steps_total, na.rm = T)
+steps_median
+```
 
 ## What is the average daily activity pattern?
 
+In original dataset *activity\$interval* is a integer vector. In this case we will need to
+us *as.factor* function to use *split* to subset original dataset by intervals.
 
+```{r split steps by interval}
+steps_by_interval <- split(activity, as.factor(activity$interval))
+intervals <- names(steps_by_interval)
+head(intervals)
+```
+
+Now we can count *mean* of steps in every subset by interval. NA will be ignored.
+```{r total split steps by interval}
+steps_average_per_interval <- data.frame(interval = rep(0, length(intervals)),
+                                         steps = rep(0, length(intervals)))
+for (i in 1:length(intervals)){
+    steps_average_per_interval[i, 1] <- intervals[i]
+    steps_average_per_interval[i, 2] <- mean(steps_by_interval[[i]][['steps']], na.rm = T)
+}
+# tail(steps_average_per_interval)
+plot(steps_average_per_interval$interval, steps_average_per_interval$steps,
+     type = 'l', xlab = "Intervals", ylab = "Average number of steps", col = "blue")
+```
+
+On this point we have a data frame that in first column has all intervals and in second
+column has corresponding average number of steps, so we can find an interval that in average
+has the maxumum number of steps.
+```{r interval with maximum steps}
+max_index <- which.max(steps_average_per_interval$steps)
+max_interval <- steps_average_per_interval[max_index, 1]
+max_interval
+```
 
 ## Imputing missing values
 
