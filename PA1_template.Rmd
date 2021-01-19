@@ -58,15 +58,17 @@ intervals <- names(steps_by_interval)
 head(intervals)
 ```
 
-Now we can count *mean* of steps in every subset by interval. NA will be ignored.
+Now we can count *mean* and *median* of steps in every subset by interval. NA will be ignored.
 ```{r total split steps by interval}
 steps_average_per_interval <- data.frame(interval = rep(0, length(intervals)),
-                                         steps = rep(0, length(intervals)))
+                                         steps = rep(0, length(intervals)),
+                                         median_steps = rep(0, length(intervals)))
 for (i in 1:length(intervals)){
     steps_average_per_interval[i, 1] <- intervals[i]
     steps_average_per_interval[i, 2] <- mean(steps_by_interval[[i]][['steps']], na.rm = T)
+    steps_average_per_interval[i, 3] <- median(steps_by_interval[[i]][['steps']], na.rm = T)
 }
-# tail(steps_average_per_interval)
+
 plot(steps_average_per_interval$interval, steps_average_per_interval$steps,
      type = 'l', xlab = "Intervals", ylab = "Average number of steps", col = "blue")
 ```
@@ -82,6 +84,41 @@ max_interval
 
 ## Imputing missing values
 
+Calculate number of *NA* in *activity* by columns
 
+```{r number of NA in dataset}
+# NA number in "date"
+na_number <- sum(is.na(activity$date))
+na_number
+# NA number in "intervals"
+na_number <- sum(is.na(activity$interval))
+na_number
+# NA number in "steps"
+na_number <- sum(is.na(activity$steps))
+na_number
+```
+As we can see, all missing values are situated in "steps" column.
 
+Like a strategy for replacement of messing values was chosen the next one: every
+missing value will be replaced with median for corresponding time interval. This strategy
+lets us to ignore some abnormal person behavior.
+
+For the first copy *activity* data frame to a new one and select *steps* coulumn to
+some variable for the future usage.
+```{r create new data frame}
+new_activity <- activity
+steps <- new_activity$steps
+```
+
+Now we can replace every *NA* with corresponding median for interval, that we calculated earlier.
+```{r replace NA with median}
+for (i in 1:length(steps)) {
+    if (is.na(steps[i])) {
+        interval <- new_activity[[i, 3]]
+        median_steps <- steps_average_per_interval[steps_average_per_interval$interval == interval, 3]
+        steps[i] <- median_steps
+    }
+}
+new_activity$steps <- steps
+```
 ## Are there differences in activity patterns between weekdays and weekends?
