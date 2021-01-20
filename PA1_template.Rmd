@@ -155,12 +155,34 @@ new_steps
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-For every raw in new dataset add factor variable weekday
+For every raw in the new dataset add factor variable weekday
 ```{r add new factor}
-weekend <- c("суббота", "воскресенье")
+weekend <- c("Saturday", "Sunday")
 new_activity$weekend <- factor(rep("weekday", length(new_activity$date)), levels = c("weekday", "weekend"))
 for (i in 1:length(new_activity$date)){
   new_activity[[i, 4]] <- ifelse(weekdays(as.Date(new_activity[[i, 2]])) %in% weekend, "weekend", "weekday")
 }
+```
+Split *new_activity* on two data frames by *new_activity$weekend*
+```{r split new activity}
+splited_new_activity <- split(new_activity, new_activity$weekend)
 
+weekday_activity <- as.data.frame(splited_new_activity$weekday)
+weekend_activity <- as.data.frame(splited_new_activity$weekend)
+```
+Now for both data frames we can calculate average number of steps using *tapply*
+and draw plots
+```{r weekend and weekday average by interval}
+weekend_mean <- tapply(weekend_activity$steps, as.factor(weekend_activity$interval), mean)
+weekday_mean <- tapply(weekday_activity$steps, as.factor(weekday_activity$interval), mean)
+
+# par(mfcol = c(2, 1))
+# par(fig = c(0, 0.7, 0, 0.7), new = T)
+par(mfcol = c(2, 1))
+plot(names(weekend_mean), weekend_mean, xlab = "Intervals",
+     ylab = "Steps (weekends)", type = "l", col = "red",
+     ylim = c(0, 200))
+plot(names(weekday_mean), weekday_mean, xlab = "Intervals",
+     ylab = "Steps (weekdays)", type = "l", col = "blue",
+     ylim = c(0, 200))
 ```
